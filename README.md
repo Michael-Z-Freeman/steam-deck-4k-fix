@@ -1,5 +1,9 @@
 # Steam Deck 4K Auto-Scaler
 
+![steam-deck-internal-display-100-percent-scaling](https://github.com/user-attachments/assets/a6219d76-aead-491c-9fa7-1514b237388e)
+
+![steam-deck-external-display-200-percent-scaling](https://github.com/user-attachments/assets/2f274e63-4829-4600-b6c0-bdeec765cb3e)
+
 A background service for the Steam Deck (KDE Plasma 6) that automatically adjusts the UI scaling when connected to an external 4K display.
 
 ## Problem
