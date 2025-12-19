@@ -1,0 +1,11 @@
+[Unit]
+Description=Auto Scale UI for External Monitor
+After=plasma-workspace.target
+
+[Service]
+ExecStart=/home/deck/autoscale.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

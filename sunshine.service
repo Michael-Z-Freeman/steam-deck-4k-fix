@@ -1,0 +1,17 @@
+[Unit]
+Description=Sunshine GameStream Server
+After=network-online.target
+StartLimitIntervalSec=500
+StartLimitBurst=5
+
+[Service]
+Type=simple
+# Dynamically find the Xauthority file since the name changes on reboot
+ExecStart=/bin/sh -c 'export XAUTHORITY=$(ls /run/user/1000/xauth* | head -n 1); exec /usr/bin/flatpak run dev.lizardbyte.app.Sunshine'
+Restart=on-failure
+RestartSec=5s
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+
+[Install]
+WantedBy=default.target
