@@ -78,10 +78,3 @@ systemctl --user daemon-reload
 *   **OS:** SteamOS (Arch Linux)
 *   **Desktop:** KDE Plasma 6
 *   **Hardware:** Steam Deck LCD / OLED
-
-## Remote Access Notes
-### XRDP / FreeRDP
-SteamOS includes `freerdp-shadow-cli` natively, which can be used for remote desktop access without disabling the read-only filesystem. However, note the following:
-*   **Orientation:** The Steam Deck uses a native portrait panel. When using `freerdp-shadow-cli`, the remote view may appear upside down or inverted. Use the `/rotation:180` flag in the command to correct this.
-*   **Color Inversion:** Due to how FreeRDP reads the Steam Deck's frame buffer, some users may experience inverted color channels (BGR vs RGB).
-*   **Recommendation:** For high-performance remote access with correct color/orientation, **Sunshine** (available via Flatpak/Discover) is the recommended alternative to Steam Link or RDP.
