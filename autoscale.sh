@@ -7,9 +7,17 @@ INTERNAL_DISPLAY="eDP"
 
 # Set DISPLAY variable to ensure xrandr works
 export DISPLAY=:0
-export XAUTHORITY=$(ls /run/user/1000/xauth* | head -n 1)
 
 while true; do
+ # REFRESH XAUTHORITY dynamically on every loop iteration to handle session restarts
+ XAUTH_FROM_PROC=$(pgrep -u $USER plasmashell | head -n 1 | xargs -I {} cat /proc/{}/environ 2>/dev/null | tr '\0' '\n' | grep "^XAUTHORITY=" | cut -d= -f2)
+ if [ -n "$XAUTH_FROM_PROC" ]; then
+    export XAUTHORITY="$XAUTH_FROM_PROC"
+ else
+    # Fallback if plasmashell isn't ready yet
+    export XAUTHORITY=$(ls /run/user/1000/xauth* 2>/dev/null | head -n 1)
+ fi
+
  # 1. Detect if an external monitor is connected
  # We look for any connected display that is NOT the internal one.
  EXTERNAL_CONNECTED=$(xrandr | grep " connected" | grep -v "$INTERNAL_DISPLAY")
@@ -38,13 +46,17 @@ while true; do
  # Check current Xset Acceleration
  CURRENT_XSET=$(xset q | grep "acceleration:" | awk '{print $2}')
 
+ # Check current ButtonSize
+ CURRENT_BUTTON_SIZE=$(kreadconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonSize)
+ if [ -z "$CURRENT_BUTTON_SIZE" ]; then CURRENT_BUTTON_SIZE="Normal"; fi
+
  # 3. Logic: Switch Scale based on connection status
  
  # Case A: External Connected
  # We trigger if scale/dpi/cursor/accel is wrong OR if the internal display is still active
  INTERNAL_IS_ACTIVE=$(xrandr | grep "^$INTERNAL_DISPLAY connected" | grep "[0-9]x[0-9]")
  
- if [ -n "$EXTERNAL_CONNECTED" ] && ( [ "$CURRENT_SCALE" -ne 2 ] || [ "$CURRENT_DPI" -ne 192 ] || [ "$CURRENT_CURSOR" -ne 48 ] || [ "$CURRENT_ACCEL" != "1.0" ] || [ "$CURRENT_XSET" != "5/1" ] || [ -n "$INTERNAL_IS_ACTIVE" ] ); then
+ if [ -n "$EXTERNAL_CONNECTED" ] && ( [ "$CURRENT_SCALE" -ne 2 ] || [ "$CURRENT_DPI" -ne 192 ] || [ "$CURRENT_CURSOR" -ne 48 ] || [ "$CURRENT_ACCEL" != "1.0" ] || [ "$CURRENT_XSET" != "5/1" ] || [ "$CURRENT_BUTTON_SIZE" != "VeryHuge" ] || [ -n "$INTERNAL_IS_ACTIVE" ] ); then
  echo "External Monitor Detected. Switching to 200% Scale and configuring displays..."
  
  # Turn OFF internal display to force desktop to fill external screen
@@ -61,8 +73,12 @@ while true; do
  # Set Mouse Speed (Libinput) to Max (1.0)
  kwriteconfig6 --file kcminputrc --group Mouse --key XLibInputPointerAcceleration 1.0
  
- # Reload KWin settings
- qdbus6 org.kde.KWin /KWin reconfigure
+ # Increase Window Decoration Size
+ kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonSize VeryHuge
+ kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key BorderSize Large
+
+ # Restart KWin (Force Reload)
+ kwin_x11 --replace &> /dev/null &
 
  # Force X11 DPI (96 * 2 = 192)
  echo "Xft.dpi: 192" | xrdb -merge
@@ -81,7 +97,7 @@ while true; do
  kstart plasmashell &
 
  # Case B: External Disconnected AND (Scale is not 1 OR DPI is higher than 96)
- elif [ -z "$EXTERNAL_CONNECTED" ] && ( [ "$CURRENT_SCALE" -ne 1 ] || [ "$CURRENT_DPI" -gt 96 ] ); then
+ elif [ -z "$EXTERNAL_CONNECTED" ] && ( [ "$CURRENT_SCALE" -ne 1 ] || [ "$CURRENT_DPI" -gt 96 ] || [ "$CURRENT_BUTTON_SIZE" != "Normal" ] ); then
  echo "External Monitor Disconnected. Reverting to 100% Scale..."
  
  # Turn ON internal display
@@ -96,8 +112,12 @@ while true; do
  # Reset Mouse Speed
  kwriteconfig6 --file kcminputrc --group Mouse --key XLibInputPointerAcceleration 0.0
 
- # Reload KWin settings
- qdbus6 org.kde.KWin /KWin reconfigure
+ # Reset Window Decoration Size
+ kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key ButtonSize Normal
+ kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key BorderSize Normal
+
+ # Restart KWin (Force Reload)
+ kwin_x11 --replace &> /dev/null &
 
  # Force X11 DPI (96 * 1 = 96)
  echo "Xft.dpi: 96" | xrdb -merge
