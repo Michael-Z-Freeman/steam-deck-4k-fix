@@ -7,7 +7,7 @@ StartLimitBurst=5
 [Service]
 Type=simple
 # Dynamically find the Xauthority file since the name changes on reboot
-ExecStart=/bin/sh -c 'export XAUTHORITY=$(ls /run/user/1000/xauth* | head -n 1); exec /usr/bin/flatpak run dev.lizardbyte.app.Sunshine'
+ExecStart=/bin/bash -c 'for i in {1..60}; do XAUTHORITY=$(pgrep -u $USER plasmashell | head -n 1 | xargs -I {} cat /proc/{}/environ 2>/dev/null | tr "\\0" "\\n" | grep "^XAUTHORITY=" | cut -d= -f2); if [ -z "$XAUTHORITY" ]; then XAUTHORITY=$(ls -t /run/user/1000/xauth* 2>/dev/null | head -n 1); fi; if [ -n "$XAUTHORITY" ]; then export XAUTHORITY; echo "Found XAUTHORITY: $XAUTHORITY"; break; fi; echo "Waiting for Xauthority..."; sleep 1; done; exec /usr/bin/flatpak run dev.lizardbyte.app.Sunshine'
 Restart=on-failure
 RestartSec=5s
 Environment=DISPLAY=:0
